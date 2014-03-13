@@ -84,14 +84,17 @@
 			form.find("["+options.validateAttribute+"*=validate][type=checkbox],[class*=validate][type=radio]").off("click", methods._onFieldEvent);
 
 			// unbind form.submit
-			form.off("submit", methods._onSubmitEvent);
+			form.off("submit", methods.onAjaxFormComplete);
+
+			// unbind form.submit
+			form.off("submit", methods.onAjaxFormComplete);
 			form.removeData('jqv');
             
 			form.off("click", "a[data-validation-engine-skip], a[class*='validate-skip'], button[data-validation-engine-skip], button[class*='validate-skip'], input[data-validation-engine-skip], input[class*='validate-skip']", methods._submitButtonClick);
 			form.removeData('jqv_submitButton');
 
 			if (options.autoPositionUpdate)
-				$(window).off("resize", methods.updatePromptsPosition);
+				$(window).unbind("resize", methods.updatePromptsPosition);
 
 			return this;
 		},
@@ -339,18 +342,9 @@
 					errorFound |= methods._validateField(field, options);
 					if (errorFound && first_err==null)
 						if (field.is(":hidden") && options.prettySelect)
-							first_err = field = form.find("#" + options.usePrefix + methods._jqSelector(field.attr('id')) + options.useSuffix);
-						else {
-
-							//Check if we need to adjust what element to show the prompt on
-							//and and such scroll to instead
-							if(field.data('jqv-prompt-at') instanceof jQuery ){
-								field = field.data('jqv-prompt-at');
-							} else if(field.data('jqv-prompt-at')) {
-								field = $(field.data('jqv-prompt-at'));
-							}
-							first_err=field;
-						}
+										 first_err = field = form.find("#" + options.usePrefix + methods._jqSelector(field.attr('id')) + options.useSuffix);
+									else
+										 first_err=field;
 					if (options.doNotShowAllErrosOnSubmit)
 						return false;
 					names.push(field.attr('name'));
@@ -446,11 +440,7 @@
 					return options.onBeforeAjaxFormValidation(form, options);
 				},
 				error: function(data, transport) {
-					if (options.onFailure) {
-						options.onFailure(data, transport);
-					} else {
-						methods._ajaxError(data, transport);
-					}
+					methods._ajaxError(data, transport);
 				},
 				success: function(json) {
 					if ((dataType == "json") && (json !== true)) {
@@ -708,10 +698,7 @@
 				}	
 			}
 			// If the rules required is not added, an empty field is not validated
-			//the 3rd condition is added so that even empty password fields should be equal
-			//otherwise if one is filled and another left empty, the "equal" condition would fail
-			//which does not make any sense
-			if(!required && !(field.val()) && field.val().length < 1 && rules.indexOf("equals") < 0) options.isError = false;
+			if(!required && !(field.val()) && field.val().length < 1) options.isError = false;
 
 			// Hack for radio/checkbox group button, the validation go into the
 			// first radio/checkbox of the group
@@ -1150,7 +1137,7 @@
 		_past: function(form, field, rules, i, options) {
 
 			var p=rules[i + 1];
-			var fieldAlt = $(form.find("*[name='" + p.replace(/^#+/, '') + "']"));
+			var fieldAlt = $(form.find("input[name='" + p.replace(/^#+/, '') + "']"));
 			var pdate;
 
 			if (p.toLowerCase() == "now") {
@@ -1183,7 +1170,7 @@
 		_future: function(form, field, rules, i, options) {
 
 			var p=rules[i + 1];
-			var fieldAlt = $(form.find("*[name='" + p.replace(/^#+/, '') + "']"));
+			var fieldAlt = $(form.find("input[name='" + p.replace(/^#+/, '') + "']"));
 			var pdate;
 
 			if (p.toLowerCase() == "now") {
@@ -1411,11 +1398,7 @@
 					 options: options,
 					 beforeSend: function() {},
 					 error: function(data, transport) {
-						if (options.onFailure) {
-							options.onFailure(data, transport);
-						} else {
-							methods._ajaxError(data, transport);
-						}
+						 methods._ajaxError(data, transport);
 					 },
 					 success: function(json) {
 
@@ -1527,13 +1510,6 @@
 		* @param {Map} options user options
 		*/
 		 _showPrompt: function(field, promptText, type, ajaxed, options, ajaxform) {
-		 	//Check if we need to adjust what element to show the prompt on
-			if(field.data('jqv-prompt-at') instanceof jQuery ){
-				field = field.data('jqv-prompt-at');
-			} else if(field.data('jqv-prompt-at')) {
-				field = $(field.data('jqv-prompt-at'));
-			}
-
 			 var prompt = methods._getPrompt(field);
 			 // The ajax submit errors are not see has an error in the form,
 			 // When the form errors are returned, the engine see 2 bubbles, but those are ebing closed by the engine at the same time
@@ -1735,7 +1711,7 @@
 		_getPrompt: function(field) {
 				var formId = $(field).closest('form, .validationEngineContainer').attr('id');
 			var className = methods._getClassName(field.attr("id")) + "formError";
-				var match = $("." + methods._escapeExpression(className) + '.parentForm' + methods._getClassName(formId))[0];
+				var match = $("." + methods._escapeExpression(className) + '.parentForm' + formId)[0];
 			if (match)
 			return $(match);
 		},
